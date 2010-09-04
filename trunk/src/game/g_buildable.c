@@ -282,7 +282,7 @@ static qboolean G_FindDCC( gentity_t *self )
     {
       VectorSubtract( self->s.origin, ent->s.origin, temp_v );
       distance = VectorLength( temp_v );
-      if( distance < minDistance && ent->powered )
+      if( ( !foundDCC || distance < minDistance ) && ent->powered )
       {
         closestDCC = ent;
         minDistance = distance;
@@ -2732,6 +2732,46 @@ qboolean G_BuildableRange( vec3_t origin, float r, buildable_t buildable )
   return qfalse;
 }
 
+static qboolean G_BoundsIntersect(const vec3_t mins, const vec3_t maxs,
+                                  const vec3_t mins2, const vec3_t maxs2)
+{
+  if ( maxs[0] < mins2[0] ||
+       maxs[1] < mins2[1] ||
+       maxs[2] < mins2[2] ||
+       mins[0] > maxs2[0] ||
+       mins[1] > maxs2[1] ||
+       mins[2] > maxs2[2])
+  {
+    return qfalse;
+  }
+
+  return qtrue;
+}
+
+/*
+===============
+G_BuildablesIntersect
+
+Test if two buildables intersect each other
+===============
+*/
+static qboolean G_BuildablesIntersect( buildable_t a, vec3_t originA,
+                                       buildable_t b, vec3_t originB )
+{
+  vec3_t minsA, maxsA;
+  vec3_t minsB, maxsB;
+
+  BG_FindBBoxForBuildable( a, minsA, maxsA );
+  VectorAdd( minsA, originA, minsA );
+  VectorAdd( maxsA, originA, maxsA );
+
+  BG_FindBBoxForBuildable( b, minsB, maxsB );
+  VectorAdd( minsB, originB, minsB );
+  VectorAdd( maxsB, originB, maxsB );
+
+  return G_BoundsIntersect( minsA, maxsA, minsB, maxsB );
+}
+
 /*
 ===============
 G_CompareBuildablesForRemoval
@@ -2739,6 +2779,8 @@ G_CompareBuildablesForRemoval
 qsort comparison function for a buildable removal list
 ===============
 */
+static buildable_t  cmpBuildable;
+static vec3_t       cmpOrigin;
 static int G_CompareBuildablesForRemoval( const void *a, const void *b )
 {
   int       precedence[ ] =
@@ -2767,9 +2809,29 @@ static int G_CompareBuildablesForRemoval( const void *a, const void *b )
   gentity_t *buildableA, *buildableB;
   int       i;
   int       aPrecedence = 0, bPrecedence = 0;
+  qboolean  aMatches = qfalse, bMatches = qfalse;
 
   buildableA = *(gentity_t **)a;
   buildableB = *(gentity_t **)b;
+
+
+  // Prefer the one that collides with the thing we're building
+  aMatches = G_BuildablesIntersect( cmpBuildable, cmpOrigin,
+      buildableA->s.modelindex, buildableA->s.origin );
+  bMatches = G_BuildablesIntersect( cmpBuildable, cmpOrigin,
+      buildableB->s.modelindex, buildableB->s.origin );
+  if( aMatches && !bMatches )
+    return -1;
+  if( !aMatches && bMatches )
+    return 1;
+
+  // If one matches the thing we're building, prefer it
+  aMatches = ( buildableA->s.modelindex == cmpBuildable );
+  bMatches = ( buildableB->s.modelindex == cmpBuildable );
+  if( aMatches && !bMatches )
+    return -1;
+  if( !aMatches && bMatches )
+    return 1;
 
   // If they're the same type then pick the one marked earliest
   if( buildableA->s.modelindex == buildableB->s.modelindex )
@@ -2835,9 +2897,8 @@ Determine if enough build points can be released for the buildable
 and list the buildables that much be destroyed if this is the case
 ===============
 */
-static qboolean G_SufficientBPAvailable( buildableTeam_t team,
-                                         int             buildPoints,
-                                         buildable_t     buildable )
+static itemBuildError_t G_SufficientBPAvailable( buildable_t     buildable,
+                                                 vec3_t          origin )
 {
   int       i;
   int       numBuildables = 0;
@@ -2845,88 +2906,148 @@ static qboolean G_SufficientBPAvailable( buildableTeam_t team,
   gentity_t *ent;
   qboolean  unique = BG_FindUniqueTestForBuildable( buildable );
   int       remainingBP, remainingSpawns;
+  int               team;
+  int               buildPoints;
+  qboolean          collision = qfalse;
+  int               collisionCount = 0;
+  qboolean          repeaterInRange = qfalse;
+  int               repeaterInRangeCount = 0;
+  itemBuildError_t  bpError;
+  buildable_t       spawn;
+  buildable_t       core;
+  int               spawnCount = 0;
 
+  level.numBuildablesForRemoval = 0;
+
+  buildPoints = BG_FindBuildPointsForBuildable( buildable );
+  team = BG_FindTeamForBuildable( buildable );
   if( team == BIT_ALIENS )
   {
     remainingBP     = level.alienBuildPoints;
     remainingSpawns = level.numAlienSpawns;
+    bpError         = IBE_NOASSERT;
+    spawn           = BA_A_SPAWN;
+    core            = BA_A_OVERMIND;
   }
   else if( team == BIT_HUMANS )
   {
     remainingBP     = level.humanBuildPoints;
     remainingSpawns = level.numHumanSpawns;
+    bpError         = IBE_NOPOWER;
+    spawn           = BA_H_SPAWN;
+    core            = BA_H_REACTOR;
   }
   else
-    return qfalse;
+    return IBE_NONE;
 
   // Simple non-marking case
   if( !g_markDeconstruct.integer )
   {
     if( remainingBP - buildPoints < 0 )
-      return qfalse;
-    else
-      return qtrue;
+      return bpError;
+
+    // Check for buildable<->buildable collisions
+    for( i = MAX_CLIENTS, ent = g_entities + i; i < level.num_entities; i++, ent++ )
+    {
+      if( ent->s.eType != ET_BUILDABLE )
+        continue;
+
+      if( G_BuildablesIntersect( buildable, origin, ent->s.modelindex, ent->s.origin ) )
+        return IBE_NOROOM;
+    }
+
+    return IBE_NONE;
   }
 
   // Set buildPoints to the number extra that are required
   buildPoints -= remainingBP;
 
-  level.numBuildablesForRemoval = 0;
-
   // Build a list of buildable entities
-  for( i = 1, ent = g_entities + i; i < level.num_entities; i++, ent++ )
+  for( i = MAX_CLIENTS, ent = g_entities + i; i < level.num_entities; i++, ent++ )
   {
+    if( ent->s.eType != ET_BUILDABLE )
+      continue;
+
+    collision = G_BuildablesIntersect( buildable, origin, ent->s.modelindex, ent->s.origin );
+
+    if( collision )
+      collisionCount++;
+
+    // Check if this is a repeater and it's in range
+    if( buildable == BA_H_REPEATER &&
+        buildable == ent->s.modelindex &&
+        Distance( ent->s.origin, origin ) < REPEATER_BASESIZE )
+    {
+      repeaterInRange = qtrue;
+      repeaterInRangeCount++;
+    }
+    else
+      repeaterInRange = qfalse;
+
     if( !ent->inuse )
       continue;
 
     if( ent->health <= 0 )
       continue;
 
-    // Don't allow destruction of hovel with granger inside
-    if( ent->s.modelindex == BA_A_HOVEL && ent->active )
-      continue;
-
     if( ent->biteam != team )
       continue;
 
-    // Prevent destruction of the last spawn
-    if( remainingSpawns <= 1 )
+    // Don't allow destruction of hovel with granger inside
+    if( ent->s.modelindex == BA_A_HOVEL && ent->active )
     {
-      if( ent->s.modelindex == BA_A_SPAWN || ent->s.modelindex == BA_H_SPAWN )
+      if( buildable == BA_A_HOVEL )
+        return IBE_HOVEL;
+      else
         continue;
     }
 
-    // If it's a unique buildable, it can only be replaced by the same type
-    if( unique && ent->s.modelindex != buildable )
+    // Explicitly disallow replacement of the core buildable with anything
+    // other than the core buildable
+    if( ent->s.modelindex == core && buildable != core )
       continue;
 
     if( ent->deconstruct )
+    {
       level.markedBuildables[ numBuildables++ ] = ent;
+
+      if( collision || repeaterInRange )
+      {
+        if( collision )
+          collisionCount--;
+
+        if( repeaterInRange )
+          repeaterInRangeCount--;
+
+        pointsYielded += BG_FindBuildPointsForBuildable(  ent->s.modelindex );
+        level.numBuildablesForRemoval++;
+      }
+      else if( unique && ent->s.modelindex == buildable )
+      {
+        // If it's a unique buildable, it must be replaced by the same type
+        pointsYielded += BG_FindBuildPointsForBuildable(  ent->s.modelindex );
+        level.numBuildablesForRemoval++;
+      }
+    }
   }
 
   // We still need build points, but have no candidates for removal
   if( buildPoints > 0 && numBuildables == 0 )
-    return qfalse;
+    return bpError;
+
+  // Collided with something we can't remove
+  if( collisionCount > 0 )
+    return IBE_NOROOM;
+
+  // There are one or more repeaters we can't remove
+  if( repeaterInRangeCount > 0 )
+    return IBE_RPTWARN2;
 
   // Sort the list
+  cmpBuildable = buildable;
+  VectorCopy( origin, cmpOrigin );
   qsort( level.markedBuildables, numBuildables, sizeof( level.markedBuildables[ 0 ] ),
          G_CompareBuildablesForRemoval );
-
-  // Do a pass looking for a buildable of the same type that we're
-  // building and mark it (and only it) for destruction if found
-  for( i = 0; i < numBuildables; i++ )
-  {
-    ent = level.markedBuildables[ i ];
-
-    if( ent->s.modelindex == buildable )
-    {
-      // If we're removing what we're building this will always work
-      level.markedBuildables[ 0 ]   = ent;
-      level.numBuildablesForRemoval = 1;
-
-      return qtrue;
-    }
-  }
 
   // Determine if there are enough markees to yield the required BP
   for( ; pointsYielded < buildPoints && level.numBuildablesForRemoval < numBuildables;
@@ -2936,15 +3057,58 @@ static qboolean G_SufficientBPAvailable( buildableTeam_t team,
     pointsYielded += BG_FindBuildPointsForBuildable( ent->s.modelindex );
   }
 
+  // Make sure we're not removing the last spawn
+  for( i = 0; i < level.numBuildablesForRemoval; i++ )
+  {
+    if( level.markedBuildables[ i ]->s.modelindex == spawn )
+      spawnCount++;
+  }
+  if( !g_cheats.integer && remainingSpawns > 0 && ( remainingSpawns - spawnCount ) < 1 )
+    return IBE_NORMAL;
+
   // Not enough points yielded
   if( pointsYielded < buildPoints )
+    return bpError;
+
+  return IBE_NONE;
+}
+
+/*
+================
+G_SetBuildableLinkState
+
+Links or unlinks all the buildable entities
+================
+*/
+static void G_SetBuildableLinkState( qboolean link )
+{
+  int       i;
+  gentity_t *ent;
+
+  for ( i = 1, ent = g_entities + i; i < level.num_entities; i++, ent++ )
   {
-    level.numBuildablesForRemoval = 0;
-    return qfalse;
+    if( ent->s.eType != ET_BUILDABLE )
+      continue;
+
+    if( link )
+      trap_LinkEntity( ent );
+    else
+      trap_UnlinkEntity( ent );
   }
-  else
+}
+
+static void G_SetBuildableMarkedLinkState( qboolean link )
+{
+  int       i;
+  gentity_t *ent;
+
+  for( i = 0; i < level.numBuildablesForRemoval; i++ )
   {
-    return qtrue;
+    ent = level.markedBuildables[ i ];
+    if( link )
+      trap_LinkEntity( ent );
+    else
+      trap_UnlinkEntity( ent );
   }
 }
 
@@ -2969,6 +3133,10 @@ itemBuildError_t G_CanBuild( gentity_t *ent, buildable_t buildable, int distance
   int               contents;
   playerState_t     *ps = &ent->client->ps;
   int               buildPoints;
+  itemBuildError_t  tempReason;
+
+  // Stop all buildables from interacting with traces
+  G_SetBuildableLinkState( qfalse );
 
   BG_FindBBoxForBuildable( buildable, mins, maxs );
 
@@ -2988,10 +3156,6 @@ itemBuildError_t G_CanBuild( gentity_t *ent, buildable_t buildable, int distance
     reason = IBE_NORMAL;
 
   if( tr1.entityNum != ENTITYNUM_WORLD )
-    reason = IBE_NORMAL;
-
-  //check there is enough room to spawn from (presuming this is a spawn)
-  if( G_CheckSpawnPoint( -1, origin, normal, buildable, NULL ) != NULL )
     reason = IBE_NORMAL;
 
   contents = trap_PointContents( entity_origin, -1 );
@@ -3067,9 +3231,6 @@ itemBuildError_t G_CanBuild( gentity_t *ent, buildable_t buildable, int distance
         }
       }
     }
-
-    if( !G_SufficientBPAvailable( BIT_ALIENS, buildPoints, buildable ) )
-      reason = IBE_NOASSERT;
   }
   else if( ent->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS )
   {
@@ -3142,14 +3303,29 @@ itemBuildError_t G_CanBuild( gentity_t *ent, buildable_t buildable, int distance
         }
       }
     }
+  }
 
-    if( !G_SufficientBPAvailable( BIT_HUMANS, buildPoints, buildable ) )
-      reason = IBE_NOPOWER;
+  if( ( tempReason = G_SufficientBPAvailable( buildable, origin ) ) != IBE_NONE )
+    reason = tempReason;
+
+  // Relink buildables
+  G_SetBuildableLinkState( qtrue );
+
+  //check there is enough room to spawn from (presuming this is a spawn)
+  if( reason == IBE_NONE )
+  {
+    G_SetBuildableMarkedLinkState( qfalse );
+    if( G_CheckSpawnPoint( ENTITYNUM_NONE, origin, normal, buildable, NULL ) != NULL )
+      reason = IBE_NORMAL;
+    G_SetBuildableMarkedLinkState( qtrue );
   }
 
   //this item does not fit here
   if( reason == IBE_NONE && ( tr2.fraction < 1.0 || tr3.fraction < 1.0 ) )
     return IBE_NOROOM;
+
+  if( reason != IBE_NONE )
+    level.numBuildablesForRemoval = 0;
 
   return reason;
 }

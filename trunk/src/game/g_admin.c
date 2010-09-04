@@ -298,8 +298,8 @@ g_admin_cmd_t g_admin_cmds[ ] =
     },
 
     {"stage", G_admin_stage, "STAGE",
-        "Sets the stage for one or both teams",
-		"[a|h] / (^3#^7)"
+        "Sets the stage for both teams",
+		"[A|H]/(^3#^7)"
     },
 
 
@@ -5902,10 +5902,10 @@ qboolean G_admin_ranktest( gentity_t *ent, int skiparg )
 qboolean G_admin_listranks( gentity_t *ent, int skiparg )
 {	    
     ADMP( "^3!listranks: ^712 available commands\n");
-    ADMP( "^3run !flag ^5[another player's name] ^7[rank] ^3To give them that rank you ^3must not use spaces.\n" );
+    ADMP( "^3run !flag ^5[another player's name] ^7[rank] ^3To give them that rank you ^3must use no spaces.\n" );
     ADMP( "^5Elite    Scrimmer    Builder    EventOrganizer    2ndCommand    \n" );
 	ADMP( "^5Leader  Original  Developer  MentorCoordinator  RankingOfficer  \n" );
-	ADMP( "^6Private  Corporal  Sergeant  2ndLieutenant  1stLieutenant \n" );
+	ADMP( "^6Private  Corporal  Sergeant  SecondLieutenant  First Lieutenant \n" );
 	ADMP( "^6Captain  Major  Colonel LieutenantGeneral GeneralofArmy   \n" );
 	return qtrue;
 }
@@ -6186,7 +6186,7 @@ minargc = 2 + skiparg;
 		return qfalse;
 	}
 G_SayArgv( 1 + skiparg, team_chr, sizeof( team_chr ) );
-	if( team_chr[0] == 'a' || team_chr[0] == 'A' )
+	if( team_chr[0] == 'a' )
 	{
 		G_SayArgv( 2 + skiparg, stage_chr, sizeof( stage_chr ) );
 		stage = atoi(stage_chr);
@@ -6194,7 +6194,7 @@ G_SayArgv( 1 + skiparg, team_chr, sizeof( team_chr ) );
 		stage -= 1;
 		tHumans = qfalse;
 	}
-	else if( team_chr[0] == 'h' || team_chr[0] == 'H' )
+	else if( team_chr[0] == 'h' )
 	{
 		G_SayArgv( 2 + skiparg, stage_chr, sizeof( stage_chr ) );
 		stage = atoi(stage_chr);
@@ -6209,8 +6209,10 @@ G_SayArgv( 1 + skiparg, team_chr, sizeof( team_chr ) );
 		stage -= 1;
 	}
 
+
 	if( (stage <= maxStage) && (stage >= minStage )  )
-	{	if(tAliens)
+	{	
+		if(tAliens)
 		{	
 			trap_Cvar_Set( "g_alienStage", va( "%i",stage) );
 			trap_SendServerCommand( -1,  va( "^3!stage: ^7Aliens have been set to stage ^1%i^7!\n", realStage ) );
@@ -6219,7 +6221,7 @@ G_SayArgv( 1 + skiparg, team_chr, sizeof( team_chr ) );
 		{
 			trap_Cvar_Set( "g_humanStage", va( "%i",stage) );
 			trap_SendServerCommand( -1,  va( "^3!stage: ^7Humans have been set to stage ^1%i^7!\n", realStage ) );
-			}
+		}
 		return qtrue;
 	}
 	else

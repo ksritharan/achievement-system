@@ -548,7 +548,6 @@ static void G_IssueMapChange( int rotation )
   int   i;
   int   map = G_GetCurrentMap( rotation );
   char  cmd[ MAX_TOKEN_CHARS ];
-  char  mapname[ MAX_CVAR_VALUE_STRING ];
 
   // allow a manually defined g_layouts setting to override the maprotation
   if( !g_layouts.string[ 0 ] &&
@@ -558,12 +557,8 @@ static void G_IssueMapChange( int rotation )
       mapRotations.rotations[ rotation ].maps[ map ].layouts );
   }
 
-  trap_Cvar_VariableStringBuffer( "mapname", mapname, sizeof( mapname ) );
-  if ( Q_stricmp( mapname, mapRotations.rotations[ rotation ].maps[ map ].name ) )
-    trap_SendConsoleCommand( EXEC_APPEND, va( "map %s\n",
-      mapRotations.rotations[ rotation ].maps[ map ].name ) );
-  else
-    trap_SendConsoleCommand( EXEC_APPEND, "map_restart\n" );
+  trap_SendConsoleCommand( EXEC_APPEND, va( "map %s\n",
+    mapRotations.rotations[ rotation ].maps[ map ].name ) );
 
   // load up map defaults if g_mapConfigs is set
   G_MapConfigs( mapRotations.rotations[ rotation ].maps[ map ].name );
@@ -696,6 +691,9 @@ qboolean G_AdvanceMapRotation( void )
           break;
 
         case MCT_ROTATION:
+          //need to increment the current map before changing the rotation
+          //or you get infinite loops with some conditionals
+          G_SetCurrentMap( nextMap, currentRotation );
           G_StartMapRotation( mrc->dest, qtrue );
           return qtrue;
           break;

@@ -180,6 +180,9 @@ vmCvar_t  g_devmapNoStructDmg;
 vmCvar_t  g_voteMinTime;
 vmCvar_t  g_mapvoteMaxTime;
 vmCvar_t  g_votableMaps;
+vmCvar_t  g_killingSpree;
+vmCvar_t  g_flamerKills;
+vmCvar_t  g_mdKills;
 
 vmCvar_t  g_msg;
 vmCvar_t  g_msgTime;
@@ -348,7 +351,6 @@ static cvarTable_t   gameCvarTable[ ] =
   { &g_tag, "g_tag", "main", CVAR_INIT, 0, qfalse },
   
   { &g_dretchPunt, "g_dretchPunt", "1", CVAR_ARCHIVE, 0, qfalse  },
-  
   { &g_msg, "g_msg", "", CVAR_ARCHIVE, 0, qfalse  },
   { &g_msgTime, "g_msgTime", "0", CVAR_ARCHIVE, 0, qfalse  },
   
@@ -358,7 +360,9 @@ static cvarTable_t   gameCvarTable[ ] =
   //TheRoob's Addition
   { &g_slapKnockback, "g_slapKnockback", "200", CVAR_ARCHIVE, 0, qfalse},
   { &g_slapDamage, "g_slapDamage", "5", CVAR_ARCHIVE, 0, qfalse},
-
+  { &g_killingSpree, "g_killingSpree", "0", CVAR_ARCHIVE, 0, qfalse  },
+  { &g_flamerKills, "g_flamerKills", "9", CVAR_ARCHIVE, 0, qfalse  },
+  { &g_mdKills, "g_mdKills", "2", CVAR_ARCHIVE, 0, qfalse  },  
 
 };
 

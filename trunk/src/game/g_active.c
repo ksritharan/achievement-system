@@ -417,7 +417,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd )
      if( ( client->pers.teamSelection == PTE_ALIENS &&
            G_SearchSpawnQueue( &level.alienSpawnQueue, ent-g_entities ) ) ||
          ( client->pers.teamSelection == PTE_HUMANS &&
-           G_SearchSpawnQueue( &level.alienSpawnQueue, ent-g_entities ) ) )
+           G_SearchSpawnQueue( &level.humanSpawnQueue, ent-g_entities ) ) )
      {
        client->ps.pm_flags |= PMF_QUEUED;
      }
@@ -557,6 +557,9 @@ void ClientTimerActions( gentity_t *ent, int msec )
   gclient_t *client;
   usercmd_t *ucmd;
   int       aForward, aRight;
+  qboolean  walking = qfalse, stopped = qfalse,
+            crouched = qfalse, jumping = qfalse,
+            strafing = qfalse;
 
   ucmd = &ent->client->pers.cmd;
 
@@ -568,18 +571,31 @@ void ClientTimerActions( gentity_t *ent, int msec )
   client->time1000 += msec;
   client->time10000 += msec;
 
+  if( aForward == 0 && aRight == 0 )
+    stopped = qtrue;
+  else if( aForward <= 64 && aRight <= 64 )
+    walking = qtrue;
+
+  if( aRight > 0 )
+    strafing = qtrue;
+
+  if( ucmd->upmove > 0 )
+    jumping = qtrue;
+  else if( ent->client->ps.pm_flags & PMF_DUCKED )
+    crouched = qtrue;
+
   while ( client->time100 >= 100 )
   {
     client->time100 -= 100;
 
     //if not trying to run then not trying to sprint
-    if( aForward <= 64 )
+    if( walking || stopped )
       client->ps.stats[ STAT_STATE ] &= ~SS_SPEEDBOOST;
 
     if( BG_InventoryContainsUpgrade( UP_JETPACK, client->ps.stats ) && BG_UpgradeIsActive( UP_JETPACK, client->ps.stats ) )
       client->ps.stats[ STAT_STATE ] &= ~SS_SPEEDBOOST;
 
-    if( ( client->ps.stats[ STAT_STATE ] & SS_SPEEDBOOST ) &&  ucmd->upmove >= 0 )
+    if( ( client->ps.stats[ STAT_STATE ] & SS_SPEEDBOOST ) && !crouched )
     {
       //subtract stamina
       if( BG_InventoryContainsUpgrade( UP_LIGHTARMOUR, client->ps.stats ) )
@@ -591,7 +607,7 @@ void ClientTimerActions( gentity_t *ent, int msec )
         client->ps.stats[ STAT_STAMINA ] = -MAX_STAMINA;
     }
 
-    if( ( aForward <= 64 && aForward > 5 ) || ( aRight <= 64 && aRight > 5 ) )
+    if( walking || crouched )
     {
       //restore stamina
       client->ps.stats[ STAT_STAMINA ] += STAMINA_WALK_RESTORE;
@@ -599,7 +615,7 @@ void ClientTimerActions( gentity_t *ent, int msec )
       if( client->ps.stats[ STAT_STAMINA ] > MAX_STAMINA )
         client->ps.stats[ STAT_STAMINA ] = MAX_STAMINA;
     }
-    else if( aForward <= 5 && aRight <= 5 )
+    else if( stopped )
     {
       //restore stamina faster
       client->ps.stats[ STAT_STAMINA ] += STAMINA_STOP_RESTORE;
@@ -868,7 +884,7 @@ void ClientTimerActions( gentity_t *ent, int msec )
     {
       ent->client->pers.statscounters.timealive++;
       level.humanStatsCounters.timealive++;
-      if( G_BuildableRange( ent->client->ps.origin, 900, BA_H_REACTOR ) )
+      if( G_BuildableRange( ent->client->ps.origin, 900, BA_H_REACTOR ) || G_BuildableRange( ent->client->ps.origin, 900, BA_H_REPEATER ) )
       {
         ent->client->pers.statscounters.timeinbase++;
         level.humanStatsCounters.timeinbase++;
@@ -883,6 +899,21 @@ void ClientTimerActions( gentity_t *ent, int msec )
       }
     }
    
+	if( g_killingSpree.integer )
+	{
+		if( (ent->client->pers.statscounters.timealive - ent->client->pers.statscounters.timeinbase) == 180 )
+		{
+			trap_SendServerCommand( -1,
+            va( "print \"^7Good job %s^7! %s ^7stayed alive for 3 minutes without camping!\n\"",
+              ent->client->pers.netname, ent->client->pers.netname ) );
+			trap_SendServerCommand( -1,
+            va( "print \"^7Better than that guy!\n\"") );			
+		}
+	}
+
+
+
+
     // turn off life support when a team admits defeat 
     if( client->ps.stats[ STAT_PTEAM ] == PTE_ALIENS &&
       level.surrenderTeam == PTE_ALIENS )
@@ -1427,6 +1458,9 @@ void ClientThink_real( gentity_t *ent )
     return;
   }
 
+  if( client->pers.teamSelection != PTE_NONE && client->pers.joinedATeam )
+    G_UpdatePTRConnection( client );
+
   // spectators don't do much
   if( client->sess.sessionTeam == TEAM_SPECTATOR )
   {
@@ -1436,8 +1470,6 @@ void ClientThink_real( gentity_t *ent )
     SpectatorThink( ent, ucmd );
     return;
   }
-
-  G_UpdatePTRConnection( client );
 
   // check for inactivity timer, but never drop the local client of a non-dedicated server
   if( !ClientInactivityTimer( client ) )

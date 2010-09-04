@@ -339,6 +339,12 @@ typedef struct
   short headshots;
   int hits;
   int hitslocational;
+  int mdammo;
+  int killNumber;
+  int mdkills[1000];
+  int flamerkills[1000];
+  qboolean wasonspree;
+  short spreekills;
   short teamkills;
   int dretchbasytime;
   int jetpackusewallwalkusetime;
@@ -405,6 +411,8 @@ typedef struct
 
   int                 lastFloodTime;         // level.time of last flood-limited command
   int                 floodDemerits;         // number of flood demerits accumulated
+
+  int                 spreeTime1000;
 
   vec3_t              lastDeathLocation;
   char                guid[ 33 ];
@@ -1231,6 +1239,12 @@ extern  gentity_t       g_entities[ MAX_GENTITIES ];
 
 #define FOFS(x) ((int)&(((gentity_t *)0)->x))
 
+ //spree values
+ #define SPREE_FEED_VALUE 120
+ #define SPREE_FEED_FADE  3
+ #define SPREE_FEED_DELAY 50
+
+
 extern  vmCvar_t  g_dedicated;
 extern  vmCvar_t  g_cheats;
 extern  vmCvar_t  g_maxclients;     // allow this many total, including spectators
@@ -1370,7 +1384,9 @@ extern  vmCvar_t  g_buildLogMaxLength;
 //TheRoob's Addition
 extern vmCvar_t  g_slapKnockback;
 extern vmCvar_t  g_slapDamage;
-
+extern vmCvar_t  g_killingSpree;
+extern vmCvar_t  g_flamerKills;
+extern vmCvar_t  g_mdKills;
 
 void      trap_Printf( const char *fmt );
 void      trap_Error( const char *fmt );
