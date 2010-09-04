@@ -1663,6 +1663,7 @@ unsigned int _hextoi( const char **stringPtr )
 #define SHORTINT  0x00000040    /* short integer */
 #define ZEROPAD   0x00000080    /* zero (as opposed to blank) pad */
 #define FPT       0x00000100    /* floating point number */
+#define UNSIGNED  0x00000200    /* unsigned integer */    
 
 #define to_digit(c)   ((c) - '0')
 #define is_digit(c)   ((unsigned)to_digit(c) <= 9)
@@ -1675,6 +1676,9 @@ void AddInt( char **buf_p, int val, int width, int flags )
   char  *buf;
 
   digits = 0;
+
+  if( flags & UNSIGNED )
+    val = (unsigned) val;
 
   if( flags & HEX )
   {
@@ -1762,8 +1766,10 @@ void AddFloat( char **buf_p, float fval, int width, int prec )
   buf = *buf_p;
 
   while( digits < width )
+  {
     *buf++ = ' ';
     width--;
+  }
 
   while( digits-- )
     *buf++ = text[ digits ];
@@ -1938,6 +1944,8 @@ reswitch:
         arg++;
         break;
 
+      case 'u':
+        flags |= UNSIGNED;
       case 'd':
       case 'i':
         AddInt( &buf_p, *arg, width, flags );
