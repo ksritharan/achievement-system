@@ -278,11 +278,11 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	 self->client->pers.statscounters.wasonspree = qfalse;
 
 	  }
-	  for(f = 0; f < g_flamerKills.integer; f++)
+	  for(f = 0; f < g_flamerKills.integer+1; f++)
 	  {
 		  self->client->pers.statscounters.flamerkills[f] = 0;
 	  }
-	  for(f = 0; f < g_mdKills.integer; f++)
+	  for(f = 0; f < g_mdKills.integer+1; f++)
 	  {
 		  self->client->pers.statscounters.mdkills[f] = 0;
 	  }
@@ -462,7 +462,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				attacker->client->pers.netname, attacker->client->pers.netname, g_flamerKills.integer ) );
 				trap_SendServerCommand( -1,
      			va( "print \"^7Burn baby burn!\n\"") );
-				for(q = 0; q < g_flamerKills.integer; q++)
+				for(q = 0; q < g_flamerKills.integer+1; q++)
 				{
 				attacker->client->pers.statscounters.flamerkills[q] = 0;
 				}

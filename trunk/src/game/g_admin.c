@@ -6215,12 +6215,12 @@ G_SayArgv( 1 + skiparg, team_chr, sizeof( team_chr ) );
 		if(tAliens)
 		{	
 			trap_Cvar_Set( "g_alienStage", va( "%i",stage) );
-			trap_SendServerCommand( -1,  va( "^3!stage: ^7Aliens have been set to stage ^1%i^7!\n", realStage ) );
+			trap_SendServerCommand( -1,  va("print \"^3!stage: ^7Aliens have been set to stage ^1%i^7!\n\"", realStage ) );
 		}
 		if(tHumans)
 		{
 			trap_Cvar_Set( "g_humanStage", va( "%i",stage) );
-			trap_SendServerCommand( -1,  va( "^3!stage: ^7Humans have been set to stage ^1%i^7!\n", realStage ) );
+			trap_SendServerCommand( -1,  va("print \"^3!stage: ^7Humans have been set to stage ^1%i^7!\n\"", realStage ) );
 		}
 		return qtrue;
 	}
