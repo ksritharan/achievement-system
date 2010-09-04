@@ -421,13 +421,13 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				  strcpy(spree, "^7got a ^4Quadruple ^7Kill");
 				  break;
 			   case 5:
-				  strcpy(spree, "^7got a ^2MONSTER ^7Kill");
-				  break;
-			   case 6:
 				  strcpy(spree, "^7is on a ^1RAMPAGE");
 				  break;
-			   case 7:
+			   case 6:
 				  strcpy(spree, "^7got an ^6OverKill");
+				  break;
+			   case 7:
+				  strcpy(spree, "^7got a ^2MONSTER ^7Kill");
 				  break;
 			   case 8:
 				  strcpy(spree, "^7reached the top of ^1Killimanjaro");
