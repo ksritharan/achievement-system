@@ -261,7 +261,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
     {
 		self->client->pers.statscounters.killNumber = 0;
 		self->client->pers.statscounters.spreekills = 0;
-		if( percentDamage == 100 && self->client->pers.teamSelection == PTE_HUMANS)
+		if( percentDamage == 1 && self->client->pers.teamSelection == PTE_HUMANS)
 		{
 			trap_SendServerCommand( -1,
             va( "print \"^7Nice, kill %s^7! %s ^7killed a human with 1 hit!\n\"",
