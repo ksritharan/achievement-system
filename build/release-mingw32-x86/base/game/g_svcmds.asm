@@ -1230,7 +1230,7 @@ ADDRGP4 $250
 JUMPV
 LABELV $253
 ADDRLP4 0
-CNSTI4 1860
+CNSTI4 9892
 ADDRLP4 8
 INDIRI4
 MULI4
@@ -1271,7 +1271,7 @@ ADDRGP4 $264
 JUMPV
 LABELV $261
 ADDRLP4 0
-CNSTI4 1860
+CNSTI4 9892
 ADDRLP4 4
 INDIRI4
 MULI4
@@ -2479,6 +2479,11 @@ import trap_RealTime
 import trap_Milliseconds
 import trap_Error
 import trap_Printf
+import g_bttg
+import g_killtime
+import g_mdKills
+import g_flamerKills
+import g_killingSpree
 import g_slapDamage
 import g_slapKnockback
 import g_buildLogMaxLength

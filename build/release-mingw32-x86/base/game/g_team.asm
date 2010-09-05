@@ -478,7 +478,7 @@ ADDRLP4 9380
 CNSTI4 516
 ASGNI4
 ADDRLP4 9384
-CNSTI4 864
+CNSTI4 8896
 ASGNI4
 ADDRLP4 0
 INDIRP4
@@ -601,7 +601,7 @@ ADDRLP4 9384
 CNSTI4 516
 ASGNI4
 ADDRLP4 9388
-CNSTI4 864
+CNSTI4 8896
 ASGNI4
 ADDRLP4 0
 INDIRP4
@@ -1122,6 +1122,11 @@ import trap_RealTime
 import trap_Milliseconds
 import trap_Error
 import trap_Printf
+import g_bttg
+import g_killtime
+import g_mdKills
+import g_flamerKills
+import g_killingSpree
 import g_slapDamage
 import g_slapKnockback
 import g_buildLogMaxLength

@@ -432,7 +432,7 @@ ASGNI4
 ADDRGP4 $127
 JUMPV
 LABELV $124
-CNSTI4 1860
+CNSTI4 9892
 ADDRLP4 0
 INDIRI4
 MULI4
@@ -445,7 +445,7 @@ INDIRI4
 CNSTI4 2
 NEI4 $129
 ADDRLP4 8
-CNSTI4 1860
+CNSTI4 9892
 ADDRLP4 0
 INDIRI4
 MULI4
@@ -1454,7 +1454,7 @@ ARGI4
 ADDRGP4 level
 INDIRP4
 ARGP4
-CNSTI4 1860
+CNSTI4 9892
 ARGI4
 ADDRGP4 trap_LocateGameData
 CALLV
@@ -2601,6 +2601,11 @@ import trap_RealTime
 import trap_Milliseconds
 import trap_Error
 import trap_Printf
+import g_bttg
+import g_killtime
+import g_mdKills
+import g_flamerKills
+import g_killingSpree
 import g_slapDamage
 import g_slapKnockback
 import g_buildLogMaxLength

@@ -341,10 +341,14 @@ typedef struct
   int hitslocational;
   int mdammo;
   int killNumber;
+  int bttg;
+  qboolean alreadybttg;
   int mdkills[1000];
   int flamerkills[1000];
   qboolean wasonspree;
+  short achkills;
   short spreekills;
+  float	spreeRate;
   short teamkills;
   int dretchbasytime;
   int jetpackusewallwalkusetime;
@@ -1387,6 +1391,8 @@ extern vmCvar_t  g_slapDamage;
 extern vmCvar_t  g_killingSpree;
 extern vmCvar_t  g_flamerKills;
 extern vmCvar_t  g_mdKills;
+extern vmCvar_t  g_killtime;
+extern vmCvar_t  g_bttg;
 
 void      trap_Printf( const char *fmt );
 void      trap_Error( const char *fmt );

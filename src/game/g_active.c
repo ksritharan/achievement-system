@@ -864,7 +864,7 @@ void ClientTimerActions( gentity_t *ent, int msec )
     {
       ent->client->pers.statscounters.timealive++;
       level.alienStatsCounters.timealive++;
-      if( G_BuildableRange( ent->client->ps.origin, 900, BA_A_OVERMIND ) )
+      if( G_BuildableRange( ent->client->ps.origin, 900, BA_A_OVERMIND ) || G_BuildableRange( ent->client->ps.origin, 900, BA_A_SPAWN ) )
       {
         ent->client->pers.statscounters.timeinbase++;
         level.alienStatsCounters.timeinbase++;
@@ -899,15 +899,17 @@ void ClientTimerActions( gentity_t *ent, int msec )
       }
     }
    
-	if( g_killingSpree.integer )
+	if( g_killingSpree.integer && !ent->client->pers.statscounters.alreadybttg )
 	{
-		if( (ent->client->pers.statscounters.timealive - ent->client->pers.statscounters.timeinbase) == 180 )
+		ent->client->pers.statscounters.bttg = ent->client->pers.statscounters.timealive - ent->client->pers.statscounters.timeinbase;
+		if( ent->client->pers.statscounters.bttg == g_bttg.integer*60 )
 		{
 			trap_SendServerCommand( -1,
             va( "print \"^7Good job %s^7! %s ^7stayed alive for 3 minutes without camping!\n\"",
               ent->client->pers.netname, ent->client->pers.netname ) );
 			trap_SendServerCommand( -1,
-            va( "print \"^7Better than that guy!\n\"") );			
+            va( "print \"^7Better than that guy!\n\"") );
+			ent->client->pers.statscounters.alreadybttg = qtrue;
 		}
 	}
 

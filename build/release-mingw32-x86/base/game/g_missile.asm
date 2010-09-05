@@ -646,7 +646,7 @@ INDIRP4
 CNSTI4 516
 ADDP4
 INDIRP4
-CNSTI4 1064
+CNSTI4 9096
 ADDP4
 ADDRGP4 level+28
 INDIRI4
@@ -749,7 +749,7 @@ INDIRP4
 CNSTI4 516
 ADDP4
 INDIRP4
-CNSTI4 1068
+CNSTI4 9100
 ADDP4
 ADDRGP4 level+28
 INDIRI4
@@ -1361,7 +1361,7 @@ INDIRU4
 EQU4 $167
 ADDRLP4 96
 INDIRP4
-CNSTI4 1012
+CNSTI4 9044
 ADDP4
 INDIRP4
 CVPU4 4
@@ -1377,7 +1377,7 @@ INDIRP4
 CNSTI4 516
 ADDP4
 INDIRP4
-CNSTI4 1012
+CNSTI4 9044
 ADDP4
 CNSTP4 0
 ASGNP4
@@ -4767,6 +4767,11 @@ import trap_RealTime
 import trap_Milliseconds
 import trap_Error
 import trap_Printf
+import g_bttg
+import g_killtime
+import g_mdKills
+import g_flamerKills
+import g_killingSpree
 import g_slapDamage
 import g_slapKnockback
 import g_buildLogMaxLength
