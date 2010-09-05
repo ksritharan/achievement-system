@@ -180,9 +180,6 @@ vmCvar_t  g_devmapNoStructDmg;
 vmCvar_t  g_voteMinTime;
 vmCvar_t  g_mapvoteMaxTime;
 vmCvar_t  g_votableMaps;
-vmCvar_t  g_killingSpree;
-vmCvar_t  g_flamerKills;
-vmCvar_t  g_mdKills;
 
 vmCvar_t  g_msg;
 vmCvar_t  g_msgTime;
@@ -190,6 +187,11 @@ vmCvar_t  g_msgTime;
 //TheRoob's Addition
 vmCvar_t  g_slapKnockback;
 vmCvar_t  g_slapDamage;
+vmCvar_t  g_killingSpree;
+vmCvar_t  g_flamerKills;
+vmCvar_t  g_mdKills;
+vmCvar_t  g_killtime;
+vmCvar_t  g_bttg;
 
 
 static cvarTable_t   gameCvarTable[ ] =
@@ -362,8 +364,9 @@ static cvarTable_t   gameCvarTable[ ] =
   { &g_slapDamage, "g_slapDamage", "5", CVAR_ARCHIVE, 0, qfalse},
   { &g_killingSpree, "g_killingSpree", "0", CVAR_ARCHIVE, 0, qfalse  },
   { &g_flamerKills, "g_flamerKills", "9", CVAR_ARCHIVE, 0, qfalse  },
-  { &g_mdKills, "g_mdKills", "2", CVAR_ARCHIVE, 0, qfalse  },  
-
+  { &g_mdKills, "g_mdKills", "2", CVAR_ARCHIVE, 0, qfalse  },
+  { &g_killtime, "g_killtime", "6", CVAR_ARCHIVE, 0, qfalse  },
+  { &g_bttg, "g_bttg", "3", CVAR_ARCHIVE, 0, qfalse  },
 };
 
 static int gameCvarTableSize = sizeof( gameCvarTable ) / sizeof( gameCvarTable[ 0 ] );

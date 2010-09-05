@@ -6069,7 +6069,7 @@ CNSTU4 0
 EQU4 $562
 ADDRLP4 0
 INDIRP4
-CNSTI4 864
+CNSTI4 8896
 ADDP4
 INDIRI4
 CNSTI4 1
@@ -10889,6 +10889,11 @@ import trap_RealTime
 import trap_Milliseconds
 import trap_Error
 import trap_Printf
+import g_bttg
+import g_killtime
+import g_mdKills
+import g_flamerKills
+import g_killingSpree
 import g_slapDamage
 import g_slapKnockback
 import g_buildLogMaxLength

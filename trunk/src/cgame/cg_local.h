@@ -1192,7 +1192,19 @@ typedef struct
   sfxHandle_t humanTalkSound;
   sfxHandle_t landSound;
   sfxHandle_t fallSound;
-
+  // TheRoob Addition Sounds
+  sfxHandle_t doubleSound;
+  sfxHandle_t tripleSound;
+  sfxHandle_t quadSound;
+  sfxHandle_t monsterSound;
+  sfxHandle_t rampageSound;
+  sfxHandle_t unstoppableSound;
+  sfxHandle_t godlikeSound;
+  sfxHandle_t killingSound;
+  sfxHandle_t ludicrousSound;
+  sfxHandle_t holyshitSound;
+  sfxHandle_t killimanjaroSound;
+  
   sfxHandle_t hardBounceSound1;
   sfxHandle_t hardBounceSound2;
 
