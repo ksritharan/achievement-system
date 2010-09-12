@@ -38,6 +38,11 @@ static char g_bfb[ 32000 ];
 // note: list ordered alphabetically
 g_admin_cmd_t g_admin_cmds[ ] = 
   {
+    {"achievements", G_admin_achievements, "ACHIEVEMENTS",
+      "displays your achievements",
+      ""
+    },
+
     {"adjustban", G_admin_adjustban, "BAN",
       "change the duration or reason of a ban.  time is specified as numbers "
       "followed by units 'w' (weeks), 'd' (days), 'h' (hours) or 'm' (minutes),"
@@ -131,6 +136,12 @@ g_admin_cmd_t g_admin_cmds[ ] =
     {"kick", G_admin_kick, "KICK",
       "kick a player with an optional reason",
       "[^3name|slot#^7] (^5reason^7)"
+    },
+
+	{"killtime", G_admin_killtime, "KILLTIME",
+      "set time needed to make next kill"
+	  "to receive achievement.(Double Kill, Triple Kill etc.",
+	  "[^3num^7]"
     },
 
 	{"knockback", G_admin_knockback, "KNOCKBACK",
@@ -247,6 +258,11 @@ g_admin_cmd_t g_admin_cmds[ ] =
     {"rename", G_admin_rename, "RENAME",
       "rename a player",
       "[^3name|slot#^7] [^3new name^7]"
+    },
+
+    {"resetstats", G_admin_resetstats, "RESETSTATS",
+      "resets your achievements",
+	  "[^5y^7]"
     },
 
     {"restart", G_admin_restart, "RESTART",
@@ -6186,7 +6202,7 @@ minargc = 2 + skiparg;
 		return qfalse;
 	}
 G_SayArgv( 1 + skiparg, team_chr, sizeof( team_chr ) );
-	if( team_chr[0] == 'a' )
+	if( team_chr[0] == 'a' || team_chr[0] == 'A')
 	{
 		G_SayArgv( 2 + skiparg, stage_chr, sizeof( stage_chr ) );
 		stage = atoi(stage_chr);
@@ -6194,7 +6210,7 @@ G_SayArgv( 1 + skiparg, team_chr, sizeof( team_chr ) );
 		stage -= 1;
 		tHumans = qfalse;
 	}
-	else if( team_chr[0] == 'h' )
+	else if( team_chr[0] == 'h' || team_chr[0] == 'H')
 	{
 		G_SayArgv( 2 + skiparg, stage_chr, sizeof( stage_chr ) );
 		stage = atoi(stage_chr);
@@ -6230,5 +6246,118 @@ G_SayArgv( 1 + skiparg, team_chr, sizeof( team_chr ) );
 		ADMP( "^3!stage: ^7stage: !stage [a|h]/[1|2|3]\n" );
 		return qfalse;
 
+	}
+}
+qboolean G_admin_killtime( gentity_t *ent, int skiparg )
+{
+ char killtime[10000] = {""};
+
+  if( G_SayArgc() < 2 + skiparg )
+  {
+    ADMP( "^3!killtime: ^7usage: !killtime [num]\n" );
+	return qfalse;
+  }
+G_SayArgv( skiparg + 1, killtime, sizeof( killtime ) );
+
+ trap_Cvar_Set( "g_killtime", killtime );
+ trap_SendServerCommand( -1,  va("print \"^3!killtime: ^7Killtime has been set to ^1%s^7!\n\"", killtime ) );
+ return qtrue;
+}
+qboolean G_admin_achievements( gentity_t *ent, int skiparg )
+{
+	char earned[10000] = {"^2Earned"};
+	char notearned[10000] = {"^1NotEarned"};
+	if( G_admin_level(ent) > 0 )
+	{
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^3Achievements:\n\"") );
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^2UN-FREAKING BELIEVABLE:^7 kill ^125 ^7in-a-row : %s^7!\n\"", G_admin_permission( ent, ADMF_UNBELIEVABLE ) ? earned : notearned ) );
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^2Spamzor:^7 kill ^1100 ^7in a game : %s^7!\n\"", G_admin_permission( ent, ADMF_HUNDREDKILLS ) ? earned : notearned ) );
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^2Newbie:^7 kill ^21 ^7enemy : %s^7!\n\"", G_admin_permission( ent, ADMF_NEWBIE ) ? earned : notearned ) );
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^2Tanker:^7 stay alive in their enemy's base for a minute : %s^7!\n\"", G_admin_permission( ent, ADMF_TANKER ) ? earned : notearned ) );
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^2Spawn Camper:^7 kill atleast ^28 ^7enemies in their base : %s^7!\n\"", G_admin_permission( ent, ADMF_SPAWNCAMPER ) ? earned : notearned ) );
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^2Better than that guy:^7 stay alive for ^2%i ^7: %s^7!\n\"", g_bttg.integer, G_admin_permission( ent, ADMF_BETTERGUY ) ? earned : notearned ) );
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^2All Small and Mighty:^7 kill a battlesuit with a dretch : %s^7!\n\"", G_admin_permission( ent, ADMF_SMALLMIGHT ) ? earned : notearned ) );
+	trap_SendServerCommand( ent->client->ps.clientNum,  va("print \"^2Sticky Situation:^7 kill a human with a granger blob : %s^7!\n\"", G_admin_permission( ent, ADMF_STICKYSIT ) ? earned : notearned ) );
+	return qtrue;
+	}
+	else
+	{
+	ADMP("^3You must ^1register ^3to see receive achievements!\n");
+	return qfalse;
+	}
+}
+qboolean G_admin_resetstats( gentity_t *ent, int skiparg )
+{
+	char request[10000] = {""};
+	qboolean achievements = qfalse;
+	if( G_admin_level(ent) > 0 )
+	{
+		if( G_SayArgc() < 2 + skiparg )
+		{
+			ADMP( "^3!resetstats: ^7usage: [y]\n" );
+			return qfalse;
+		}
+		G_SayArgv( skiparg + 1, request, sizeof( request ) );
+		if( request[0] == 'y' || request[0] == 'Y')
+		{
+			if( G_admin_permission( ent, ADMF_UNBELIEVABLE ) )
+			{
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!unflag %s %s",ent->client->pers.netname, ADMF_UNBELIEVABLE ) );
+				achievements = qtrue;
+			}
+			if( G_admin_permission( ent, ADMF_HUNDREDKILLS ) )
+			{
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!unflag %s %s",ent->client->pers.netname, ADMF_HUNDREDKILLS ) );
+				achievements = qtrue;
+			}
+			if( G_admin_permission( ent, ADMF_NEWBIE ) )
+			{
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!unflag %s %s",ent->client->pers.netname, ADMF_NEWBIE ) );
+				achievements = qtrue;
+			}
+			if( G_admin_permission( ent, ADMF_TANKER ) )
+			{
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!unflag %s %s",ent->client->pers.netname, ADMF_TANKER ) );
+				achievements = qtrue;
+			}
+			if( G_admin_permission( ent, ADMF_SPAWNCAMPER ) )
+			{
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!unflag %s %s",ent->client->pers.netname, ADMF_SPAWNCAMPER ) );
+				achievements = qtrue;
+			}
+			if( G_admin_permission( ent, ADMF_BETTERGUY ) )
+			{
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!unflag %s %s",ent->client->pers.netname, ADMF_BETTERGUY ) );
+				achievements = qtrue;
+			}
+			if( G_admin_permission( ent, ADMF_STICKYSIT ) )
+			{
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!unflag %s %s",ent->client->pers.netname, ADMF_STICKYSIT ) );
+				achievements = qtrue;
+			}
+			if( G_admin_permission( ent, ADMF_SMALLMIGHT ) )
+			{
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!unflag %s %s",ent->client->pers.netname, ADMF_SMALLMIGHT ) );
+				achievements = qtrue;
+			}
+			if( !achievements )
+			{
+				ADMP("^3You do not have achievements! GO EARN SOME!\n");
+				return qfalse;
+			}
+			else
+			return qtrue;			
+		}
+		else
+		{
+			ADMP("^3Invalid Character!\n");
+			ADMP( "^3!resetstats: ^7usage: [y]\n" );
+			return qfalse;
+		}
+	}
+	else
+	{
+		ADMP("^3You must ^1register ^3to clear achievements!\n");
+		return qfalse;
 	}
 }

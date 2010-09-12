@@ -132,11 +132,14 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
   int       anim;
   int       killer;
   int       i, j, f, q;
+  int		ammo;
+  int		clips;
   char      *killerName, *obit;
   float     totalDamage = 0.0f;
   float     percentDamage = 0.0f;
   gentity_t *player;
   qboolean  tk = qfalse;
+  g_admin_admin_t *g_admin_admins[ MAX_ADMIN_ADMINS ];
   int       killCheck = 0;
   char spree[1000] = {""};
   
@@ -219,24 +222,24 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
   if( g_killingSpree.integer )
   {
 	  // Battlesuit lost to a dretch
-  		if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->client->ps.stats ) && meansOfDeath == MOD_LEVEL0_BITE )
+  		if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->client->ps.stats ) && meansOfDeath == MOD_LEVEL0_BITE && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_SMALLMIGHT ) ) )
 		{
 			trap_SendServerCommand( -1,
-            va( "print \"^7Nice kill %s^7! %s ^7killed a Battlesuit with a Dretch!\n\"",
-              attacker->client->pers.netname, attacker->client->pers.netname ) );
+            va( "print \"^7Congratulations %s^7! %s ^7killed a Battlesuit with a Dretch!\n\"",
+            attacker->client->pers.netname, attacker->client->pers.netname ) );
 			trap_SendServerCommand( -1,
-            va( "print \"^3All small and mighty!\n\"") );
-			attacker->client->pers.statscounters.spreeRate = 2;
+			va( "print \"^7%s ^7receives the ^2All Small And Mighty ^7achievement!\n\"",attacker->client->pers.netname ) );
+			trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_SMALLMIGHT ) );
 		}
 		//killed by granger blob
-		else if( self->client->pers.teamSelection == PTE_HUMANS && meansOfDeath == MOD_SLOWBLOB)
+		else if( self->client->pers.teamSelection == PTE_HUMANS && meansOfDeath == MOD_SLOWBLOB && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_STICKYSIT ) ) )
 		{
 			trap_SendServerCommand( -1,
-            va( "print \"^7Nice kill %s^7! %s ^7killed a human with a granger blob!\n\"",
-              attacker->client->pers.netname, attacker->client->pers.netname ) );
+            va( "print \"^7Congratulations %s^7! %s ^7killed a human with a granger blob!\n\"",
+            attacker->client->pers.netname, attacker->client->pers.netname ) );
 			trap_SendServerCommand( -1,
-            va( "print \"^2Sticky Situation!\n\"") );
-			attacker->client->pers.statscounters.spreeRate = 2;
+			va( "print \"^7%s ^7receives the ^2Sticky Situation ^7achievement!\n\"",attacker->client->pers.netname ) );
+			trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_STICKYSIT ) );
 		}
 		// Flamer kills
 		if( (meansOfDeath == MOD_FLAMER || meansOfDeath == MOD_FLAMER_SPLASH) && self->client->pers.teamSelection == PTE_ALIENS )
@@ -249,13 +252,23 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		{
 			if(attacker->client->pers.statscounters.killNumber == 0)
 			{
-				attacker->client->pers.statscounters.mdammo = attacker->client->ps.ammo[WP_MASS_DRIVER];
+			BG_UnpackAmmoArray( attacker->s.weapon, attacker->client->ps.ammo, attacker->client->ps.powerups, &ammo, &clips );
+			attacker->client->pers.statscounters.mdammo = ammo;
+			attacker->client->pers.statscounters.mdkills[attacker->client->pers.statscounters.killNumber] = 1;
+			trap_SendServerCommand( -1,
+            va( "print \"^2Checking Ammo! Had %d \n\"", attacker->client->pers.statscounters.mdammo ) );
 				attacker->client->pers.statscounters.killNumber++;
 			}
-			if( (attacker->client->ps.ammo[WP_MASS_DRIVER] - attacker->client->pers.statscounters.killNumber) == attacker->client->pers.statscounters.mdammo )
+			else 
 			{
+				attacker->client->pers.statscounters.killNumber++;
+				BG_UnpackAmmoArray( attacker->s.weapon, attacker->client->ps.ammo, attacker->client->ps.powerups, &ammo, &clips );
+				if( (ammo + attacker->client->pers.statscounters.killNumber) == attacker->client->pers.statscounters.mdammo )
+				{			
 				attacker->client->pers.statscounters.mdkills[attacker->client->pers.statscounters.killNumber] = 1;
-				attacker->client->pers.statscounters.killNumber++;			
+				}
+				else
+				attacker->client->pers.statscounters.killNumber = 0;
 			}
 		}
       // killing spree over
@@ -263,16 +276,20 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
     {
 		self->client->pers.statscounters.spreekills = 0;
 		self->client->pers.statscounters.timealive = 0;
-		self->client->pers.statscounters.alreadybttg = qfalse;
 		self->client->pers.statscounters.killNumber = 0;
 		self->client->pers.statscounters.achkills = 0;
-		if( percentDamage == 1 && self->client->pers.teamSelection == PTE_HUMANS)
+			//humans can't get a headshot and only 1 hit K-O's
+		if( attacker->client->pers.statscounters.hits > 1 || attacker->client->pers.teamSelection == PTE_HUMANS )
+			attacker->client->pers.statscounters.hits = 0;
+		//If the person dies and the attacker only used 1 hit
+		else if( attacker->client->pers.statscounters.hits == 1 && self->client->pers.teamSelection == PTE_HUMANS && damage > 95)
 		{
 			trap_SendServerCommand( -1,
             va( "print \"^7Nice kill %s^7! %s ^7killed a human with 1 hit!\n\"",
               attacker->client->pers.netname, attacker->client->pers.netname ) );
 			trap_SendServerCommand( -1,
             va( "print \"^7Headshot!\n\"") );
+			attacker->client->pers.statscounters.hits = 0;
 		}
 	  if( self->client->pers.statscounters.wasonspree )
 	  {
@@ -412,6 +429,14 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	  {
 		attacker->client->pers.statscounters.achkills = 0;
 	  }
+	  if( attacker->client->pers.statscounters.timeinebase > 0)
+	  {
+		attacker->client->pers.statscounters.killsinebase++;
+	  }
+	  else
+	  {
+		attacker->client->pers.statscounters.killsinebase = 0;
+	  }
 	  attacker->client->lastKillTime = level.time;	  
 	  attacker->client->pers.statscounters.spreekills++;
 	  killCheck = attacker->client->pers.statscounters.spreekills;	 
@@ -426,7 +451,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 	  if( g_killingSpree.integer )
       {
-		  attacker->client->pers.statscounters.spreeRate = attacker->client->pers.statscounters.spreekills/2;
 		 if( attacker->client->pers.statscounters.achkills < 5 && attacker->client->pers.statscounters.achkills > 1)
 		 {
 			 switch( attacker->client->pers.statscounters.achkills )
@@ -451,7 +475,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			switch( killCheck )
 			{
 			   case 6:
-				  strcpy(spree, "^7you are ^6Dominating");
+				  strcpy(spree, "^7are ^6Dominating");
 				  break;
 			   case 7:
 				  strcpy(spree, "^7got a ^2MONSTER ^7Kill");
@@ -460,27 +484,26 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				  strcpy(spree, "^7reached the top of ^1Killimanjaro");
 				  break;
 			   case 9:
-				  strcpy(spree, "^7is now a ^3Killionaire");
+				  strcpy(spree, "^7are now a ^3Killionaire");
 				  break;
 			   case 11:
 				  strcpy(spree, "^7got a ^3Ludicrous ^7Kill");
 				  break;
 			   case 12:
-				  strcpy(spree, "^7is ^5Unstoppable");
+				  strcpy(spree, "^7are ^5Unstoppable");
 				  break;
 			   case 13:
-				  strcpy(spree, "^7is ^3Godlike");
+				  strcpy(spree, "^7are ^3Godlike");
 				  break;
 			   default:
-		          strcpy(spree, "^7is owning! ^1HOLY SHIT");
+		          strcpy(spree, "^7are owning! ^1HOLY SHIT");
 				  break;
 			}
            trap_SendServerCommand( attacker->client->ps.clientNum,
-            va( "cp \"^7%s ^7%s!\n\"",
-              attacker->client->pers.netname, spree ) );
+            va( "cp \"^7You ^7%s!\n\"", spree ) );
 		   attacker->client->pers.statscounters.wasonspree = qtrue;
 		   spree[0] = '\0';		   
-         }
+       }
 		 else if( killCheck == 5 )
 		 {		
 			  strcpy(spree, "^7is on a ^5Killing Spree!!!");
@@ -526,6 +549,47 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				attacker->client->pers.statscounters.mdkills[q] = 0;
 				}				
 		 }
+			 //One-Time Achievements
+			 if( g_admin_admins[ attacker->client->ps.clientNum ]->level > 1 )
+			 {
+				if( attacker->client->pers.statscounters.kills == 100 && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_HUNDREDKILLS ) ) )
+				{
+					trap_SendServerCommand( -1,
+					va( "print \"^7Congratulations %s^7! %s ^7has achieved 100 kills in a game!\n\"",
+					attacker->client->pers.netname, attacker->client->pers.netname ) );
+					trap_SendServerCommand( -1,
+					va( "print \"^7%s ^7receives the ^1SPAMZOR ^7achievement!\n\"",attacker->client->pers.netname ) );
+					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_HUNDREDKILLS ) );
+				}
+				if( attacker->client->pers.statscounters.spreekills == 25 && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_UNBELIEVABLE ) ) )
+				{
+					trap_SendServerCommand( -1,
+					va( "print \"^7Congratulations %s^7! %s ^7has achieved 25 kills in-a-row!\n\"",
+					attacker->client->pers.netname, attacker->client->pers.netname ) );
+					trap_SendServerCommand( -1,
+					va( "print \"^7%s ^7receives the ^1UN-FREAKING BELIEVABLE ^7achievement!\n\"",attacker->client->pers.netname ) );
+					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_UNBELIEVABLE ) );
+				}
+				if( attacker->client->pers.statscounters.kills == 1 && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_NEWBIE ) ) )
+				{
+					trap_SendServerCommand( -1,
+					va( "print \"^7Congratulations %s^7! %s ^7has killed an enemy!\n\"",
+					attacker->client->pers.netname, attacker->client->pers.netname ) );
+					trap_SendServerCommand( -1,
+					va( "print \"^7%s ^7receives the ^2Newbie ^7achievement!\n\"",attacker->client->pers.netname ) );
+					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_NEWBIE ) );
+				}
+				if( attacker->client->pers.statscounters.killsinebase > 7 && attacker->client->pers.statscounters.timeinebase > 60 && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_SPAWNCAMPER ) ) )
+				{
+					trap_SendServerCommand( -1,
+					va( "print \"^7Congratulations %s^7! %s ^7has achieved 25 kills in-a-row!\n\"",
+					attacker->client->pers.netname, attacker->client->pers.netname ) );
+					trap_SendServerCommand( -1,
+					va( "print \"^7%s ^7receives the ^2Spawn Camper ^7achievement!\n\"",attacker->client->pers.netname ) );
+					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_SPAWNCAMPER ) );
+				}
+			}
+		 }
        }
      }
     
@@ -541,7 +605,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
         level.humanStatsCounters.suicides++;
       }
     }
-  }
+  
   else if( attacker->s.eType != ET_BUILDABLE )
     AddScore( self, -1 );
 
@@ -598,9 +662,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
           player->client->pers.statscounters.assists++;
           level.humanStatsCounters.assists++;
         }
-         if( player->client->pers.statscounters.spreeRate && player == attacker )
-           percentDamage *= player->client->pers.statscounters.spreeRate;
-
         //add credit
         G_AddCreditToClient( player->client,
             (int)( classValue * percentDamage ), qtrue );
@@ -643,9 +704,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
         if( frags > 0 )
         {
           //add kills
-           if( player->client->pers.statscounters.spreeRate && player == attacker )
-             G_AddCreditToClient( player->client, frags * player->client->pers.statscounters.spreeRate, qtrue );
-          else
             G_AddCreditToClient( player->client, frags, qtrue );
 
           //can't revist this account later
@@ -687,9 +745,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
             player = g_entities + topClient;
 
             //add kills
-             if( player->client->pers.statscounters.spreeRate && player == attacker )
-               G_AddCreditToClient( player->client, player->client->pers.statscounters.spreeRate, qtrue );
-             else
                G_AddCreditToClient( player->client, 1, qtrue );
 
             //can't revist this account again
