@@ -341,14 +341,16 @@ typedef struct
   int hitslocational;
   int mdammo;
   int killNumber;
+  int timeinebase;
+  int killsinebase;
+  qboolean betterguy;
+  qboolean tanker;
   int bttg;
-  qboolean alreadybttg;
   int mdkills[1000];
   int flamerkills[1000];
   qboolean wasonspree;
   short achkills;
   short spreekills;
-  float	spreeRate;
   short teamkills;
   int dretchbasytime;
   int jetpackusewallwalkusetime;

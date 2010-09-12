@@ -869,15 +869,23 @@ void ClientTimerActions( gentity_t *ent, int msec )
         ent->client->pers.statscounters.timeinbase++;
         level.alienStatsCounters.timeinbase++;
       }
+	  if( G_BuildableRange( ent->client->ps.origin, 1500, BA_H_REACTOR ) )
+      {
+        ent->client->pers.statscounters.timeinebase++;
+      }
+	  if( G_BuildableRange( ent->client->ps.origin, 1501, BA_H_REACTOR ) )
+      {
+        ent->client->pers.statscounters.timeinebase = 0;
+      }
       if( BG_ClassHasAbility( ent->client->ps.stats[ STAT_PCLASS ], SCA_WALLCLIMBER )  )
       {
         ent->client->pers.statscounters.dretchbasytime++;
         level.alienStatsCounters.dretchbasytime++;
-    if( ent->client->ps.stats[ STAT_STATE ] & SS_WALLCLIMBING  || ent->client->ps.stats[ STAT_STATE ] & SS_WALLCLIMBINGCEILING) 
-    {
-      ent->client->pers.statscounters.jetpackusewallwalkusetime++;
-      level.alienStatsCounters.jetpackusewallwalkusetime++;
-    }
+		if( ent->client->ps.stats[ STAT_STATE ] & SS_WALLCLIMBING  || ent->client->ps.stats[ STAT_STATE ] & SS_WALLCLIMBINGCEILING) 
+		{
+		  ent->client->pers.statscounters.jetpackusewallwalkusetime++;
+		  level.alienStatsCounters.jetpackusewallwalkusetime++;
+		}
       }
     }
     else if( ent->client->ps.stats[ STAT_HEALTH ] > 0 && ent->client->ps.stats[ STAT_PTEAM ] == PTE_HUMANS )
@@ -889,27 +897,47 @@ void ClientTimerActions( gentity_t *ent, int msec )
         ent->client->pers.statscounters.timeinbase++;
         level.humanStatsCounters.timeinbase++;
       }
+	  if( G_BuildableRange( ent->client->ps.origin, 900, BA_A_OVERMIND ) )
+      {
+        ent->client->pers.statscounters.timeinebase++;
+      }
+	  if( !G_BuildableRange( ent->client->ps.origin, 900, BA_A_OVERMIND ) )
+	  {
+		ent->client->pers.statscounters.timeinebase = 0;
+	  }
       if( BG_InventoryContainsUpgrade( UP_JETPACK, client->ps.stats ) )
       {
-    if( client->ps.pm_type == PM_JETPACK ) 
-    {
-      ent->client->pers.statscounters.jetpackusewallwalkusetime++;
-      level.humanStatsCounters.jetpackusewallwalkusetime++;
-    }
+		if( client->ps.pm_type == PM_JETPACK ) 
+		{
+		  ent->client->pers.statscounters.jetpackusewallwalkusetime++;
+		  level.humanStatsCounters.jetpackusewallwalkusetime++;
+		}
       }
     }
    
-	if( g_killingSpree.integer && !ent->client->pers.statscounters.alreadybttg )
+	if( g_killingSpree.integer && ent->client->pers.adminLevel > 0 )
 	{
-		ent->client->pers.statscounters.bttg = ent->client->pers.statscounters.timealive - ent->client->pers.statscounters.timeinbase;
-		if( ent->client->pers.statscounters.bttg == g_bttg.integer*60 )
+			ent->client->pers.statscounters.bttg = ent->client->pers.statscounters.timealive - ent->client->pers.statscounters.timeinbase;
+			if( ent->client->pers.statscounters.bttg == g_bttg.integer*60 && !ent->client->pers.statscounters.betterguy )
+			{
+				trap_SendServerCommand( -1,
+			    va( "print \"^7Good job %s^7! %s ^7stayed alive for %i ^7minutes without camping!\n\"",
+			    ent->client->pers.netname, ent->client->pers.netname, g_bttg.integer ) );
+				trap_SendServerCommand( -1,
+			    va( "print \"^7%s ^7receives the ^2Better than that guy ^7achievement!\n\"", ent->client->pers.netname ) );
+				trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s;", ent->client->pers.netname, ADMF_BETTERGUY ) );
+				ent->client->pers.statscounters.betterguy = qtrue;
+			}
+
+		if( ent->client->pers.statscounters.timeinebase == 90 && !ent->client->pers.statscounters.tanker )
 		{
 			trap_SendServerCommand( -1,
-            va( "print \"^7Good job %s^7! %s ^7stayed alive for 3 minutes without camping!\n\"",
-              ent->client->pers.netname, ent->client->pers.netname ) );
+			va( "print \"^7Congratulations %s^7! %s ^7has stayed alive in their enemies base for a minute!\n\"",
+			ent->client->pers.netname, ent->client->pers.netname ) );
 			trap_SendServerCommand( -1,
-            va( "print \"^7Better than that guy!\n\"") );
-			ent->client->pers.statscounters.alreadybttg = qtrue;
+			va( "print \"^7%s ^7receives the ^2Tanker ^7achievement!\n\"", ent->client->pers.netname ) );
+			trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s;", ent->client->pers.netname, ADMF_TANKER ) );
+			ent->client->pers.statscounters.tanker = qtrue;
 		}
 	}
 

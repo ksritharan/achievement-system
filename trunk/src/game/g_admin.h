@@ -96,7 +96,17 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define ADMF_MAJOR				 "MAJOR"
 #define ADMF_COLONEL			 "COLONEL"
 #define ADMF_LIEUTENANTGENERAL	 "LIEUTENANTGENERAL"
-#define ADMF_GENERALOFARMY		 "GENERALOFARMY"	
+#define ADMF_GENERALOFARMY		 "GENERALOFARMY"
+//Achievements
+#define ADMF_HUNDREDKILLS		 "HUNDREDKILLS"
+#define ADMF_UNBELIEVABLE		 "UNBELIEVABLE"
+#define ADMF_NEWBIE				 "NEWBIE"
+#define ADMF_TANKER				 "TANKER"
+#define ADMF_SPAWNCAMPER		 "SPAWNCAMPER"
+#define ADMF_BETTERGUY			 "BETTERGUY"
+#define ADMF_STICKYSIT			 "STICKYSIT"
+#define ADMF_SMALLMIGHT			 "SMALLMIGHT"
+
 
 //#define ADMF_IMMUTABLE           "IMMUTABLE"
 #define ADMF_INCOGNITO           "INCOGNITO"
@@ -239,6 +249,9 @@ qboolean G_admin_rw( gentity_t *ent, int skiparg );
 qboolean G_admin_gravity( gentity_t *ent, int skiparg );
 qboolean G_admin_knockback( gentity_t *ent, int skiparg );
 qboolean G_admin_stage( gentity_t *ent, int skiparg );
+qboolean G_admin_killtime( gentity_t *ent, int skiparg );
+qboolean G_admin_achievements( gentity_t *ent, int skiparg );
+qboolean G_admin_resetstats( gentity_t *ent, int skiparg );
 
 void G_admin_print( gentity_t *ent, char *m );
 void G_admin_buffer_print( gentity_t *ent, char *m );

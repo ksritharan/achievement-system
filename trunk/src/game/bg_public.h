@@ -578,7 +578,20 @@ typedef enum
 
   EV_DCC_ATTACK,      //TA: dcc under attack
 
-  EV_RPTUSE_SOUND     //TA: trigger a sound
+  EV_RPTUSE_SOUND,     //TA: trigger a sound
+
+  EV_DOUBLEKILL,	//TheRoob's Addition
+  EV_TRIPLEKILL,
+  EV_KILLIONAIRE,
+  EV_MONSTERKILL,
+  EV_RAMPAGE,
+  EV_UNSTOPPABLE,
+  EV_GODLIKE,
+  EV_KILLING,
+  EV_LUDICROUS,
+  EV_HOLYSHIT,
+  EV_KILLIMANJARO,
+  EV_DOMINATING
 } entity_event_t;
 
 typedef enum
