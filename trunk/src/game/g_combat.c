@@ -222,24 +222,24 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
   if( g_killingSpree.integer )
   {
 	  // Battlesuit lost to a dretch
-  		if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->client->ps.stats ) && meansOfDeath == MOD_LEVEL0_BITE && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_SMALLMIGHT ) ) )
+  		if( BG_InventoryContainsUpgrade( UP_BATTLESUIT, self->client->ps.stats ) && meansOfDeath == MOD_LEVEL0_BITE && !G_admin_permission( attacker, ADMF_SMALLMIGHT ) )
 		{
 			trap_SendServerCommand( -1,
             va( "print \"^7Congratulations %s^7! %s ^7killed a Battlesuit with a Dretch!\n\"",
             attacker->client->pers.netname, attacker->client->pers.netname ) );
 			trap_SendServerCommand( -1,
 			va( "print \"^7%s ^7receives the ^2All Small And Mighty ^7achievement!\n\"",attacker->client->pers.netname ) );
-			trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_SMALLMIGHT ) );
+			trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %i %s", attacker->client->ps.clientNum, ADMF_SMALLMIGHT ) );
 		}
 		//killed by granger blob
-		else if( self->client->pers.teamSelection == PTE_HUMANS && meansOfDeath == MOD_SLOWBLOB && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_STICKYSIT ) ) )
+		else if( self->client->pers.teamSelection == PTE_HUMANS && meansOfDeath == MOD_SLOWBLOB && !G_admin_permission( attacker, ADMF_STICKYSIT ) )
 		{
 			trap_SendServerCommand( -1,
             va( "print \"^7Congratulations %s^7! %s ^7killed a human with a granger blob!\n\"",
             attacker->client->pers.netname, attacker->client->pers.netname ) );
 			trap_SendServerCommand( -1,
 			va( "print \"^7%s ^7receives the ^2Sticky Situation ^7achievement!\n\"",attacker->client->pers.netname ) );
-			trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_STICKYSIT ) );
+			trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %i %s", attacker->client->ps.clientNum, ADMF_STICKYSIT ) );
 		}
 		// Flamer kills
 		if( (meansOfDeath == MOD_FLAMER || meansOfDeath == MOD_FLAMER_SPLASH) && self->client->pers.teamSelection == PTE_ALIENS )
@@ -552,44 +552,44 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			 //One-Time Achievements
 			 if( g_admin_admins[ attacker->client->ps.clientNum ]->level > 1 )
 			 {
-				if( attacker->client->pers.statscounters.kills == 100 && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_HUNDREDKILLS ) ) )
+				if( attacker->client->pers.statscounters.kills == 100 && !G_admin_permission( attacker, ADMF_HUNDREDKILLS ) )
 				{
 					trap_SendServerCommand( -1,
 					va( "print \"^7Congratulations %s^7! %s ^7has achieved 100 kills in a game!\n\"",
 					attacker->client->pers.netname, attacker->client->pers.netname ) );
 					trap_SendServerCommand( -1,
 					va( "print \"^7%s ^7receives the ^1SPAMZOR ^7achievement!\n\"",attacker->client->pers.netname ) );
-					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_HUNDREDKILLS ) );
+					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %i %s", attacker->client->ps.clientNum, ADMF_HUNDREDKILLS ) );
 				}
-				if( attacker->client->pers.statscounters.spreekills == 25 && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_UNBELIEVABLE ) ) )
+				if( attacker->client->pers.statscounters.spreekills == 25 && !G_admin_permission( attacker, ADMF_UNBELIEVABLE ) )
 				{
 					trap_SendServerCommand( -1,
 					va( "print \"^7Congratulations %s^7! %s ^7has achieved 25 kills in-a-row!\n\"",
 					attacker->client->pers.netname, attacker->client->pers.netname ) );
 					trap_SendServerCommand( -1,
 					va( "print \"^7%s ^7receives the ^1UN-FREAKING BELIEVABLE ^7achievement!\n\"",attacker->client->pers.netname ) );
-					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_UNBELIEVABLE ) );
+					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %i %s", attacker->client->ps.clientNum, ADMF_UNBELIEVABLE ) );
 				}
-				if( attacker->client->pers.statscounters.kills == 1 && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_NEWBIE ) ) )
+				if( attacker->client->pers.statscounters.kills == 1 && !G_admin_permission( attacker, ADMF_NEWBIE ) )
 				{
 					trap_SendServerCommand( -1,
 					va( "print \"^7Congratulations %s^7! %s ^7has killed an enemy!\n\"",
 					attacker->client->pers.netname, attacker->client->pers.netname ) );
 					trap_SendServerCommand( -1,
 					va( "print \"^7%s ^7receives the ^2Newbie ^7achievement!\n\"",attacker->client->pers.netname ) );
-					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_NEWBIE ) );
+					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %i %s", attacker->client->ps.clientNum, ADMF_NEWBIE ) );
 				}
-				if( attacker->client->pers.statscounters.killsinebase > 7 && attacker->client->pers.statscounters.timeinebase > 60 && !strstr( g_admin_admins[ attacker->client->ps.clientNum ]->flags, va( "%s", ADMF_SPAWNCAMPER ) ) )
+				if( attacker->client->pers.statscounters.killsinebase > 7 && attacker->client->pers.statscounters.timeinebase > 60 && !G_admin_permission( attacker, ADMF_SPAWNCAMPER ) )
 				{
 					trap_SendServerCommand( -1,
 					va( "print \"^7Congratulations %s^7! %s ^7has achieved 25 kills in-a-row!\n\"",
 					attacker->client->pers.netname, attacker->client->pers.netname ) );
 					trap_SendServerCommand( -1,
 					va( "print \"^7%s ^7receives the ^2Spawn Camper ^7achievement!\n\"",attacker->client->pers.netname ) );
-					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %s %s",attacker->client->pers.netname, ADMF_SPAWNCAMPER ) );
+					trap_SendConsoleCommand( EXEC_APPEND,va( "!flag %i %s", attacker->client->ps.clientNum, ADMF_SPAWNCAMPER ) );
 				}
 			}
-		 }
+		 
        }
      }
     
@@ -605,6 +605,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
         level.humanStatsCounters.suicides++;
       }
     }
+	}
   
   else if( attacker->s.eType != ET_BUILDABLE )
     AddScore( self, -1 );
